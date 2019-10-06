@@ -9,10 +9,9 @@ addons:
     brewfile: true
 
 script:
-  - mkdir build
   - cd build
-  - cmake ..
-  - make package -j$(sysctl -n hw.physicalcpu)
+  - cmake .. --DBINARY_RELEASE=ON
+  - cmake --build . --target package -j$(sysctl -n hw.physicalcpu)
 
 deploy:
   provider: releases
