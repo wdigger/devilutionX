@@ -536,21 +536,21 @@ void credts_Render()
 
 				// draw text shadow.
 				SDL_Rect dsc_rect2 = {
-					static_cast<decltype(SDL_Rect().x)>(SCREEN_X + x + 2),
-					SCREEN_Y + 114 + 2,
+					static_cast<decltype(SDL_Rect().x)>(x + 2),
+					114 + 2,
 					src_rect.w, src_rect.h
 				};
-				if (SDL_BlitSurface(shadow_surface, &src_rect, pal_surface, &dsc_rect2) <= -1) {
+				if (SDL_BlitSurface(shadow_surface, &src_rect, surface, &dsc_rect2) <= -1) {
 					SDL_Log(SDL_GetError());
 				}
 
 				// draw text.
 				SDL_Rect dsc_rect = {
-					static_cast<decltype(SDL_Rect().x)>(SCREEN_X + x),
-					SCREEN_Y + 114,
+					static_cast<decltype(SDL_Rect().x)>(x),
+					114,
 					src_rect.w, src_rect.h
 				};
-				if (SDL_BlitSurface(text_surface, &src_rect, pal_surface, &dsc_rect) <= -1) {
+				if (SDL_BlitSurface(text_surface, &src_rect, surface, &dsc_rect) <= -1) {
 					SDL_Log(SDL_GetError());
 				}
 				SDL_FreeSurface(text_surface);

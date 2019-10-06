@@ -140,15 +140,18 @@ void dx_cleanup()
 	gpBuffer = NULL;
 	sgMemCrit.Leave();
 
-	if (pal_surface == nullptr)
-		return;
 	SDL_FreeSurface(pal_surface);
 	pal_surface = nullptr;
 	SDL_FreePalette(palette);
+	palette = nullptr;
 	SDL_FreeSurface(surface);
+	surface = nullptr;
 	SDL_DestroyTexture(texture);
+	texture = nullptr;
 	SDL_DestroyRenderer(renderer);
+	renderer = nullptr;
 	SDL_DestroyWindow(window);
+	window = nullptr;
 }
 
 void dx_reinit()
@@ -215,7 +218,7 @@ void RenderPresent()
 	assert(!SDL_MUSTLOCK(surface));
 
 	if (!bufferUpdated) {
-		return;
+		//return;
 	}
 
 #ifdef USE_SDL1

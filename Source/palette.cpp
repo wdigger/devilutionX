@@ -197,7 +197,7 @@ void SetFadeLevel(DWORD fadeval)
 		SrcRect.top = 160;
 		SrcRect.right = BUFFER_WIDTH;
 		SrcRect.bottom = BUFFER_HEIGHT; // menu isn't offset so make sure we copy all of it
-		BltFast(0, 0, &SrcRect);
+		//BltFast(0, 0, &SrcRect);
 		RenderPresent();
 	}
 }

@@ -9,8 +9,7 @@
 
 namespace dvl {
 
-extern HANDLE diabdat_mpq;
-extern SDL_Surface *pal_surface;
+extern SDL_Surface *surface;
 
 namespace {
 
@@ -279,7 +278,7 @@ void DialogLoop(UiItem *items, std::size_t num_items, UiItem *render_behind, std
 		}
 
 		if (render_behind_size == 0) {
-			SDL_FillRect(pal_surface, nullptr, 0);
+			SDL_FillRect(surface, nullptr, 0);
 		} else {
 			UiRenderItems(render_behind, render_behind_size);
 		}
