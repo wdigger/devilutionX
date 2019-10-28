@@ -693,6 +693,11 @@ static void scrollrt_draw(int x, int y, int sx, int sy, int chunks, int row)
 		y += 1;
 		sx -= 32;
 		chunks += 1;
+	} else {
+		x -= 1;
+		y += 1;
+		sx -= 64;
+		chunks += 2;
 	}
 
 	for (int j = 0; j < chunks; j++) {
@@ -713,6 +718,41 @@ static void scrollrt_draw(int x, int y, int sx, int sy, int chunks, int row)
 }
 
 /**
+ * @brief Scale up the rendered part of the back buffer to tak up the full view
+ */
+static void Zoom()
+{
+	int wdt = SCREEN_WIDTH / 2;
+	int nSrcOff = SCREENXY(SCREEN_WIDTH / 2 - 1, VIEWPORT_HEIGHT / 2 - 1);
+	int nDstOff = SCREENXY(SCREEN_WIDTH - 1, VIEWPORT_HEIGHT - 1);
+
+	if (PANELS_COVER) {
+		if (chrflag || questlog) {
+			wdt >>= 1;
+			nSrcOff -= wdt;
+		} else if (invflag || sbookflag) {
+			wdt >>= 1;
+			nSrcOff -= wdt;
+			nDstOff -= 320;
+		}
+	}
+
+	BYTE *src = &gpBuffer[nSrcOff];
+	BYTE *dst = &gpBuffer[nDstOff];
+
+	for (int hgt = 0; hgt < VIEWPORT_HEIGHT / 2; hgt++) {
+		for (int i = 0; i < wdt; i++) {
+			*dst-- = *src;
+			*dst-- = *src;
+			src--;
+		}
+		memcpy(dst - BUFFER_WIDTH, dst, wdt * 2 + 1);
+		src -= BUFFER_WIDTH - wdt;
+		dst -= 2 * (BUFFER_WIDTH - wdt);
+	}
+}
+
+/**
  * @brief Configure render and process screen rows
  * @param x Center of view in dPiece coordinate
  * @param y Center of view in dPiece coordinate
@@ -720,7 +760,6 @@ static void scrollrt_draw(int x, int y, int sx, int sy, int chunks, int row)
 static void DrawGame(int x, int y)
 {
 	int i, sx, sy, chunks, blocks;
-	int wdt, nSrcOff, nDstOff;
 
 	sx = (SCREEN_WIDTH % 64) / 2;
 	sy = (VIEWPORT_HEIGHT % 32) / 2;
@@ -728,24 +767,48 @@ static void DrawGame(int x, int y)
 	if (zoomflag) {
 		chunks = ceil(SCREEN_WIDTH / 64);
 		blocks = ceil(VIEWPORT_HEIGHT / 32);
-
-		gpBufStart = &gpBuffer[BUFFER_WIDTH * SCREEN_Y];
+		if ((SCREEN_WIDTH % 128) >= 64) { // Uneaven number of tiles
+			sx -= 32;
+			x -= 1;
+			y += 1;
+		}
 		gpBufEnd = &gpBuffer[BUFFER_WIDTH * (VIEWPORT_HEIGHT + SCREEN_Y)];
 	} else {
-		sy -= 32;
-
-		chunks = ceil(SCREEN_WIDTH / 2 / 64) + 1; // TODO why +1?
+		chunks = ceil(SCREEN_WIDTH / 2 / 64);
 		blocks = ceil(VIEWPORT_HEIGHT / 2 / 32);
-
-		gpBufStart = &gpBuffer[(-17 + SCREEN_Y) * BUFFER_WIDTH];
-		gpBufEnd = &gpBuffer[(160 + SCREEN_Y) * BUFFER_WIDTH];
+		if (((SCREEN_WIDTH / 2) % 128) >= 64) { // Uneaven number of tiles
+			sx -= 64;
+			x -= 1;
+			y += 1;
+		}
+		sx += 32;
+		sy -= 16;
+		gpBufEnd = &gpBuffer[BUFFER_WIDTH * (VIEWPORT_HEIGHT / 2 + SCREEN_Y)];
 	}
 
 	sx += ScrollInfo._sxoff + SCREEN_X;
 	sy += ScrollInfo._syoff + SCREEN_Y + 15;
 
 	// Center screen
-	x -= chunks;
+	x -= chunks / 2;
+	y += chunks / 2;
+	if (SCREEN_WIDTH > PANEL_WIDTH) {
+		if (zoomflag) {
+			x -= blocks / 2 - 2;
+			y -= blocks / 2 - 2;
+		} else {
+			x -= blocks / 2;
+			y -= blocks / 2;
+		}
+	} else {
+		if (zoomflag) {
+			x -= blocks / 2;
+			y -= blocks / 2;
+		} else {
+			x -= blocks / 2 + 1;
+			y -= blocks / 2 + 1;
+		}
+	}
 	y--;
 
 	// Keep evaulating untill MicroTiles can't affect screen
@@ -764,6 +827,19 @@ static void DrawGame(int x, int y)
 				y -= 2;
 				sx -= 32;
 				chunks -= 4;
+			}
+		} else {
+			if (chrflag || questlog) {
+				x += 1;
+				y -= 1;
+				chunks -= 2;
+				sx -= 16;
+			}
+			if (invflag || sbookflag) {
+				x += 1;
+				y -= 1;
+				chunks -= 2;
+				sx -= 16;
 			}
 		}
 	}
@@ -824,42 +900,10 @@ static void DrawGame(int x, int y)
 		else
 			x++;
 	}
-	gpBufStart = &gpBuffer[BUFFER_WIDTH * SCREEN_Y];
 	gpBufEnd = &gpBuffer[BUFFER_WIDTH * (SCREEN_HEIGHT + SCREEN_Y)];
 
-	if (zoomflag)
-		return;
-
-	nSrcOff = SCREENXY(32, VIEWPORT_HEIGHT / 2 - 17);
-	nDstOff = SCREENXY(0, VIEWPORT_HEIGHT - 2);
-	wdt = SCREEN_WIDTH / 2;
-	if (PANELS_COVER) {
-		if (chrflag || questlog) {
-			nSrcOff = SCREENXY(112, VIEWPORT_HEIGHT / 2 - 17);
-			nDstOff = SCREENXY(320, VIEWPORT_HEIGHT - 2);
-			wdt = (SCREEN_WIDTH - 320) / 2;
-		} else if (invflag || sbookflag) {
-			nSrcOff = SCREENXY(112, VIEWPORT_HEIGHT / 2 - 17);
-			nDstOff = SCREENXY(0, VIEWPORT_HEIGHT - 2);
-			wdt = (SCREEN_WIDTH - 320) / 2;
-		}
-	}
-
-	int hgt;
-	BYTE *src, *dst1, *dst2;
-
-	src = &gpBuffer[nSrcOff];
-	dst1 = &gpBuffer[nDstOff];
-	dst2 = &gpBuffer[nDstOff + BUFFER_WIDTH];
-
-	for (hgt = VIEWPORT_HEIGHT / 2; hgt != 0; hgt--, src -= BUFFER_WIDTH + wdt, dst1 -= 2 * (BUFFER_WIDTH + wdt), dst2 -= 2 * (BUFFER_WIDTH + wdt)) {
-		for (i = wdt; i != 0; i--) {
-			*dst1++ = *src;
-			*dst1++ = *src;
-			*dst2++ = *src;
-			*dst2++ = *src;
-			src++;
-		}
+	if (!zoomflag) {
+		Zoom();
 	}
 }
 
